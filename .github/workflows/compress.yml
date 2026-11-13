@@ -1,0 +1,23 @@
+name: compress-mv
+on:
+  push:
+    paths: ['.github/workflows/compress.yml']
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  compress:
+    runs-on: ubuntu-latest
+    steps:
+      - name: compress for X (under 85MB, 1080x1920)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+          curl -sSL -o in.mp4 https://github.com/gykim80/pub/releases/download/mv-2026-11-v4/ondo-mv-dream-adult-cheer-2026-11-v4.mp4
+          ffprobe -v error -show_entries format=duration,size:stream=codec_name,width,height,bit_rate -of compact in.mp4
+          ffmpeg -y -i in.mp4 -c:v libx264 -preset slow -b:v 3200k -pix_fmt yuv420p -pass 1 -an -f mp4 /dev/null
+          ffmpeg -y -i in.mp4 -c:v libx264 -preset slow -b:v 3200k -pix_fmt yuv420p -pass 2 -c:a aac -b:a 160k -movflags +faststart ondo-mv-v4-x.mp4
+          ls -l ondo-mv-v4-x.mp4
+          gh release upload mv-2026-11-v4 ondo-mv-v4-x.mp4 --clobber
